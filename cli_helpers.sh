@@ -95,8 +95,7 @@ az_group_list () {
         return
     fi
 
-    az group list --query "[*].{name:name,location:location,created_on:tags.created_on,notes:tags.notes}" -o table \
-        | grep -E --color=never "^$AZLH_PREFIX" \
+    az group list --query "[?starts_with(name,'$AZLH_PREFIX')].{name:name,location:location,tags:tags}" \
         | "$SCRIPT_PATH/parse_resource_group_info.py"
 }
 
@@ -212,6 +211,31 @@ EOF
     fi
 
     bash -c "$CMD" > /dev/null 2>&1
+
+    IMAGE_PUBLISHER=$(az vm show \
+        --resource-group "$RG_NAME" \
+        --name "$VM_NAME" \
+        --query "storageProfile.imageReference.publisher" -o tsv)
+    IMAGE_OFFER=$(az vm show \
+        --resource-group "$RG_NAME" \
+        --name "$VM_NAME" \
+        --query "storageProfile.imageReference.offer" -o tsv)
+    IMAGE_SKU=$(az vm show \
+        --resource-group "$RG_NAME" \
+        --name "$VM_NAME" \
+        --query "storageProfile.imageReference.sku" -o tsv)
+    IMAGE_VERSION=$(az vm show \
+        --resource-group "$RG_NAME" \
+        --name "$VM_NAME" \
+        --query "storageProfile.imageReference.version" -o tsv)
+    IMAGE_EXACT_VERSION=$(az vm show \
+        --resource-group "$RG_NAME" \
+        --name "$VM_NAME" \
+        --query "storageProfile.imageReference.exactVersion" -o tsv)
+
+    az group update \
+        --name "$RG_NAME" \
+        --set tags."image=$IMAGE_PUBLISHER:$IMAGE_OFFER:$IMAGE_SKU:$IMAGE_VERSION ($IMAGE_EXACT_VERSION)" > /dev/null
 
     echo "Resource group:  $RG_NAME"
     echo "VM name:         $VM_NAME"

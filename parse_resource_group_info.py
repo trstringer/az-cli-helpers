@@ -1,21 +1,14 @@
 #!/usr/bin/python3
 
-import re
+import json
 import sys
 
-is_first_line = True
-for line in sys.stdin:
-    line = re.sub(r' +', ' ', line)
-    if line:
-        line = line.replace('\n', '')
-        split_line = line.split(' ')
-        notes = f'\nNotes:    {" ".join(split_line[3:])}' if len(split_line) > 3 else ""
-        if not is_first_line:
-            print()
+az_group_output = json.load(sys.stdin)
+for az_group in az_group_output:
         print(
-            f'Name:     {split_line[0] if len(split_line) >= 1 else ""}\n'
-            f'Location: {split_line[1] if len(split_line) >= 2 else ""}\n'
-            f'Created:  {split_line[2] if len(split_line) >= 3 else ""}'
-            f'{notes}'
+            f'Name:     {az_group["name"]}\n'
+            f'Location: {az_group["location"]}\n'
+            f'Created:  {az_group["tags"].get("created_on", "unknown")}\n'
+            f'Image:    {az_group["tags"].get("image", "unknown")}\n'
+            f'Notes:    {az_group["tags"].get("notes", "")}\n'
         )
-        is_first_line = False
