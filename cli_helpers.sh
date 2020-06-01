@@ -211,7 +211,7 @@ EOF
         local CMD="$(echo "$CMD" | tr -d '\n') --assign-identity --scope $SCOPE"
     fi
 
-    bash -c "$CMD" 2>&1 /dev/null
+    bash -c "$CMD" > /dev/null 2>&1
 
     echo "Resource group:  $RG_NAME"
     echo "VM name:         $VM_NAME"
