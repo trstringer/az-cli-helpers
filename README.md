@@ -17,7 +17,7 @@ Helper shell functions for Azure resource management.
 export AZLH_PREFIX="..."  # e.g. thstring
 export AZLH_ADMIN_USERNAME="..."  # e.g. trstringer
 export AZLH_REGION="..."  # e.g. eastus
-export AZLH_DEFAULT_IMAGE_NAME="Canonical:UbuntuServer:18.04-LTS:latest"
+export AZLH_DEFAULT_IMAGE_NAME="Debian:Debian-10:10:latest"
 export AZLH_PROXY_SERVER_PRIVATE_IP="..."
 export AZLH_SSH_KEY_FILE="..."
 ```
