@@ -507,7 +507,7 @@ az_image_list () {
         return
     fi
 
-    az image list -o table | grep -E --color=never "$AZLH_PREFIX" | awk '{print $2 " (" $4 ")"}'
+    az image list -o table | grep -E --color=never "$AZLH_PREFIX" | awk '{print $3 " (" $5 ")"}'
 }
 
 az_image_create_from_vm () {
