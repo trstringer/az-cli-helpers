@@ -108,6 +108,14 @@ az_proxy_is_connectable () {
     fi
 }
 
+az_proxy_refresh_ip () {
+    az network nsg rule update \
+        --name "$AZLH_PROXY_VM_NAME" \
+        --nsg-name "$AZLH_PROXY_VM_NAME" \
+        --resource-group "$AZLH_PROXY_VM_NAME" \
+        --source-address-prefixes $(curl -s ipinfo.io/ip)
+}
+
 az_proxy_server () {
     printf "$AZLH_PROXY_SERVER_PRIVATE_IP"
 }
