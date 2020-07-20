@@ -13,10 +13,6 @@
 # AZLH_REGION="eastus"
 # AZLH_DEFAULT_IMAGE_NAME="Canonical:UbuntuServer:18.04-LTS:latest"
 
-# In the event you need to SSH through a proxy server (jumpbox)
-# the following is the private IP address of the proxy server.
-# AZLH_PROXY_SERVER_PRIVATE_IP="..."
-
 # It is recommended to use a non-default SSH key for virtual machines
 # created. To create a new SSH key run `ssh-keygen` and then in SSH
 # config (~/.ssh/config) specify the host entry to use this identify
@@ -114,10 +110,6 @@ az_proxy_refresh_ip () {
         --nsg-name "$AZLH_PROXY_VM_NAME" \
         --resource-group "$AZLH_PROXY_VM_NAME" \
         --source-address-prefixes $(curl -s ipinfo.io/ip)
-}
-
-az_proxy_server () {
-    printf "$AZLH_PROXY_SERVER_PRIVATE_IP"
 }
 
 ##################################################
@@ -370,7 +362,7 @@ az_vm_ssh () {
         local SSH_COMMAND="$2"
     fi
 
-    ssh -J "$AZLH_ADMIN_USERNAME"@"$AZLH_PROXY_SERVER_PRIVATE_IP" "$AZLH_ADMIN_USERNAME"@"$DNS_NAME" "$SSH_COMMAND"
+    ssh -J "$AZLH_ADMIN_USERNAME"@"$AZLH_PROXY_VM_FQDN" "$AZLH_ADMIN_USERNAME"@"$DNS_NAME" "$SSH_COMMAND"
 }
 
 az_vm_scp_out () {
