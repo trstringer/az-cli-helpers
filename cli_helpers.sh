@@ -238,6 +238,29 @@ az_vm_create () {
         local OSDISK_SIZE_EFF="$OSDISK_SIZE"
     fi
 
+    az network nsg create \
+        --name "$VM_NAME" \
+        --resource-group "$RG_NAME" > /dev/null
+    az network nsg rule create \
+        --name "$VM_NAME" \
+        --nsg-name "$VM_NAME" \
+        --priority 100 \
+        --resource-group "$RG_NAME" \
+        --access Allow --direction Inbound \
+        --source-address-prefixes $(curl -s ipinfo.io/ip) \
+        --destination-port-ranges 22 > /dev/null
+    az network vnet create \
+        --name "$VM_NAME" \
+        --resource-group "$RG_NAME" > /dev/null
+    az network vnet subnet create \
+        --name "$VM_NAME" \
+        --vnet-name "$VM_NAME" \
+        --resource-group "$RG_NAME" \
+        --address-prefixes "10.0.0.0/24" \
+        --network-security-group $(az network nsg show \
+            --resource-group "$RG_NAME" \
+            --name "$VM_NAME" --query id -o tsv) > /dev/null
+
     IFS='' read -r -d '' CMD << EOF
         az vm create \
             -g "$RG_NAME" \
@@ -253,7 +276,10 @@ az_vm_create () {
             --size "$VM_SIZE" \
             --accelerated-networking "$ACCELERATED_NETWORKING" \
             --os-disk-size-gb "$OSDISK_SIZE_EFF" \
-            --boot-diagnostics-storage "$STORAGE_ACCOUNT_NAME"
+            --boot-diagnostics-storage "$STORAGE_ACCOUNT_NAME" \
+            --vnet-name "$VM_NAME" \
+            --subnet "$VM_NAME" \
+            --nsg "$VM_NAME"
 EOF
 
     if [[ -n "$MSI" ]]; then
@@ -304,6 +330,43 @@ az_vm_create_default () {
     fi
 
     az_vm_create "$AZLH_DEFAULT_IMAGE_NAME" "$NOTES"
+}
+
+az_vm_is_connectable () {
+    local VM_NAME="$1"
+    if [[ -z "$VM_NAME" ]]; then
+        print_usage \
+            "VM name"
+        return
+    fi
+
+    local CURRENT_SOURCE_ADDRESS=$(az network nsg rule show \
+        --resource-group "$VM_NAME" \
+        --nsg-name "$VM_NAME" \
+        --name "$VM_NAME" \
+        --query sourceAddressPrefix -o tsv)
+    local ACTUAL_SOURCE_ADDRESS=$(curl -s ipinfo.io/ip)
+    echo "$ACTUAL_SOURCE_ADDRESS (Public IP) -> $CURRENT_SOURCE_ADDRESS (NSG IP)"
+    if [[ "$CURRENT_SOURCE_ADDRESS" != "$ACTUAL_SOURCE_ADDRESS" ]]; then
+        echo "Connection not possible"
+    else
+        echo "Connection possible"
+    fi
+}
+
+az_vm_refresh_ip () {
+    local VM_NAME="$1"
+    if [[ -z "$VM_NAME" ]]; then
+        print_usage \
+            "VM name"
+        return
+    fi
+
+    az network nsg rule update \
+        --name "$VM_NAME" \
+        --nsg-name "$VM_NAME" \
+        --resource-group "$VM_NAME" \
+        --source-address-prefixes $(curl -s ipinfo.io/ip) > /dev/null
 }
 
 az_vm_create_default_custom_data () {
