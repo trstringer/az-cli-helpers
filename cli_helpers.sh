@@ -312,7 +312,8 @@ EOF
 
     az group update \
         --name "$RG_NAME" \
-        --set tags."image=$IMAGE_PUBLISHER:$IMAGE_OFFER:$IMAGE_SKU:$IMAGE_VERSION ($IMAGE_EXACT_VERSION)" > /dev/null
+        --set tags."image=$IMAGE_PUBLISHER:$IMAGE_OFFER:$IMAGE_SKU:$IMAGE_VERSION ($IMAGE_EXACT_VERSION)" \
+        --set tags.fqdn="$FULL_DNS_NAME" > /dev/null
 
     echo "Resource group:  $RG_NAME"
     echo "VM name:         $VM_NAME"
