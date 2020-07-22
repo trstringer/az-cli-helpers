@@ -333,6 +333,23 @@ az_vm_create_default () {
     az_vm_create "$AZLH_DEFAULT_IMAGE_NAME" "$NOTES"
 }
 
+az_vm_create_from_vm () {
+    local SOURCE_VM="$1"
+    if [[ -z "$SOURCE_VM" ]]; then
+        print_usage \
+            "Source VM" \
+            "(Optional) Notes"
+        return
+    fi
+
+    if [[ -n "$2" ]]; then
+        local NOTES="$2"
+    fi
+
+    az_image_create_from_vm "$SOURCE_VM"
+    az_vm_create "$SOURCE_VM" "$NOTES"
+}
+
 az_vm_is_connectable () {
     local VM_NAME="$1"
     if [[ -z "$VM_NAME" ]]; then
