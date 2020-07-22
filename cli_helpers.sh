@@ -426,7 +426,7 @@ az_vm_ssh () {
         local SSH_COMMAND="$2"
     fi
 
-    ssh -J "$AZLH_ADMIN_USERNAME"@"$AZLH_PROXY_VM_FQDN" "$AZLH_ADMIN_USERNAME"@"$DNS_NAME" "$SSH_COMMAND"
+    ssh "$AZLH_ADMIN_USERNAME"@"$DNS_NAME" "$SSH_COMMAND"
 }
 
 az_vm_scp_out () {
@@ -454,8 +454,7 @@ az_vm_scp_out () {
     local SOURCE_FILE="$2"
     local DESTINATION_FILE="$3"
 
-    scp -r -o \
-        ProxyJump="$AZLH_ADMIN_USERNAME"@$(az_proxy_server) \
+    scp -r \
         "$SOURCE_FILE" \
         "$AZLH_ADMIN_USERNAME"@$(full_dns_name "$VM_NAME"):"$DESTINATION_FILE"
 }
