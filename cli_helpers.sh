@@ -54,65 +54,6 @@ print_usage () {
 }
 
 ##################################################
-# Proxy helpers.                                 #
-##################################################
-az_proxy_setup () {
-    if [[ -z "$AZLH_PROXY_VM_NAME" ]]; then
-        echo "You must set AZLH_PROXY_VM_NAME"
-        return
-    fi
-
-    az network nsg create \
-        --name "$AZLH_PROXY_VM_NAME" \
-        --resource-group "$AZLH_PROXY_VM_NAME"
-    az network nsg rule create \
-        --name "$AZLH_PROXY_VM_NAME" \
-        --nsg-name "$AZLH_PROXY_VM_NAME" \
-        --priority 100 \
-        --resource-group "$AZLH_PROXY_VM_NAME" \
-        --access Allow --direction Inbound \
-        --source-address-prefixes $(curl ipinfo.io/ip) \
-        --destination-port-ranges 22
-    az network vnet subnet update \
-        --name "${AZLH_PROXY_VM_NAME}subnet" \
-        --vnet-name "${AZLH_PROXY_VM_NAME}vnet" \
-        --resource-group "$AZLH_PROXY_VM_NAME" \
-        --network-security-group $(az network nsg show \
-            --resource-group "$AZLH_PROXY_VM_NAME" \
-            --name "$AZLH_PROXY_VM_NAME" --query id -o tsv)
-    az network nic update \
-        --resource-group "$AZLH_PROXY_VM_NAME" \
-        --name "${AZLH_PROXY_VM_NAME}vmnic" \
-        --network-security-group ""
-    az network nsg delete \
-        --resource-group "$AZLH_PROXY_VM_NAME" \
-        --name "${AZLH_PROXY_VM_NAME}nsg"
-}
-
-az_proxy_is_connectable () {
-    local CURRENT_SOURCE_ADDRESS=$(az network nsg rule show \
-        --resource-group "$AZLH_PROXY_VM_NAME" \
-        --nsg-name "$AZLH_PROXY_VM_NAME" \
-        --name "$AZLH_PROXY_VM_NAME" \
-        --query sourceAddressPrefix -o tsv)
-    local ACTUAL_SOURCE_ADDRESS=$(curl -s ipinfo.io/ip)
-    echo "$ACTUAL_SOURCE_ADDRESS (Public IP) -> $CURRENT_SOURCE_ADDRESS (NSG IP)"
-    if [[ "$CURRENT_SOURCE_ADDRESS" != "$ACTUAL_SOURCE_ADDRESS" ]]; then
-        echo "Connection not possible"
-    else
-        echo "Connection possible"
-    fi
-}
-
-az_proxy_refresh_ip () {
-    az network nsg rule update \
-        --name "$AZLH_PROXY_VM_NAME" \
-        --nsg-name "$AZLH_PROXY_VM_NAME" \
-        --resource-group "$AZLH_PROXY_VM_NAME" \
-        --source-address-prefixes $(curl -s ipinfo.io/ip)
-}
-
-##################################################
 # Resource group helpers.                        #
 ##################################################
 az_group_create () {
