@@ -109,9 +109,9 @@ az_group_delete_all () {
 
     az group list -o table |
         grep -E "^$AZLH_PREFIX" |
-        grep -v "$AZLH_IGNORE" |
+        grep -vi "$AZLH_IGNORE" |
         awk '{print $1}' |
-        xargs -n 1 az group delete -y --no-wait -n
+        xargs -rn 1 az group delete -y --no-wait -n
 }
 
 ##################################################
