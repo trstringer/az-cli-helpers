@@ -53,6 +53,12 @@ print_usage () {
     done
 }
 
+az_account_summary () {
+    local USER=$(az account show --query "user.name" -o tsv)
+    local SUBSCRIPTION=$(az account show --query "name" -o tsv)
+    echo "$USER in '$SUBSCRIPTION'"
+}
+
 ##################################################
 # Resource group helpers.                        #
 ##################################################
@@ -86,6 +92,9 @@ az_group_list () {
         echo "You must define AZLH_PREFIX"
         return
     fi
+
+    az_account_summary
+    echo
 
     az group list --query "[?starts_with(name,'$AZLH_PREFIX')].{name:name,location:location,tags:tags}" \
         | "$SCRIPT_PATH/parse_resource_group_info.py"
