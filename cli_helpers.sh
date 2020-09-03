@@ -144,6 +144,7 @@ az_vm_create () {
         echo "Optionally set ACCEL_NET env var to enable accelerated networking."
         echo "Optionally set OSDISK_SIZE env var to os disk size in GB (default 32 GB)."
         echo "Optionally set MSI env var to enable managed service identity."
+        echo "Optionally set RESOURCE_NAME to override the resource name."
         return
     fi
 
@@ -157,7 +158,7 @@ az_vm_create () {
         local CUSTOM_DATA="$3"
     fi
     local IMAGE="$1"
-    local NAME=$(resource_name)
+    local NAME="${RESOURCE_NAME:-$(resource_name)}"
     local RG_NAME=$(az_group_create "$NAME" "$NOTES")
     local VM_NAME="$NAME"
     local DNS_NAME="$NAME"
@@ -547,6 +548,46 @@ az_vm_boot_log_dump () {
     local VM_NAME="$1"
 
     az vm boot-diagnostics get-boot-log --name "$VM_NAME" -g "$VM_NAME"
+}
+
+az_vm_disk_recovery () {
+    if [[ -z "$1" ]]; then
+        print_usage "VM name required"
+        return
+    fi
+
+    local RECOVERY_NAME="$1"
+    local NEW_RESOURCE_NAME="$(resource_name)"
+
+    RESOURCE_NAME="$NEW_RESOURCE_NAME" az_vm_create_default "recovery VM for $RECOVERY_NAME"
+
+    TARGET_DISK_ID=$(az vm show \
+        --resource-group "$RECOVERY_NAME" \
+        --name "$RECOVERY_NAME" \
+        --query "storageProfile.osDisk.managedDisk.id" -o tsv)
+    TARGET_DISK_NAME=$(az disk show \
+        --ids "$TARGET_DISK_ID" \
+        --query "name" -o tsv)
+    DISK_COPY_NAME="${TARGET_DISK_NAME}copy"
+
+    az disk create \
+        --resource-group "$NEW_RESOURCE_NAME" \
+        --name "$DISK_COPY_NAME" \
+        --source "$TARGET_DISK_ID" > /dev/null
+
+    az vm disk attach \
+        --resource-group "$NEW_RESOURCE_NAME" \
+        --vm-name "$NEW_RESOURCE_NAME" \
+        --lun 0 \
+        --name "$DISK_COPY_NAME"
+
+    NEW_FQDN="$(full_dns_name $NEW_RESOURCE_NAME)"
+
+    MOUNT_PATH="/mnt/$RECOVERY_NAME"
+    ssh $NEW_FQDN "sudo mkdir ${MOUNT_PATH}"
+    ssh $NEW_FQDN "sudo mount /dev/sdc1 ${MOUNT_PATH}"
+
+    echo "Disk available on ${NEW_FQDN} at ${MOUNT_PATH}"
 }
 
 ##################################################
