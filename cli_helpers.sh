@@ -238,7 +238,7 @@ EOF
         local CMD="$(echo "$CMD" | tr -d '\n') --assign-identity --scope $SCOPE"
     fi
 
-    bash -c "$CMD" > /dev/null 2>&1
+    bash -c "$CMD" > /dev/null
 
     IMAGE_PUBLISHER=$(az vm show \
         --resource-group "$RG_NAME" \
@@ -583,7 +583,7 @@ az_vm_disk_recovery () {
 
     NEW_FQDN="$(full_dns_name $NEW_RESOURCE_NAME)"
 
-    MOUNT_PATH="/mnt/$RECOVERY_NAME"
+    MOUNT_PATH="/mnt/recovery"
     ssh $NEW_FQDN "sudo mkdir ${MOUNT_PATH}"
     ssh $NEW_FQDN "sudo mount /dev/sdc1 ${MOUNT_PATH}"
 
