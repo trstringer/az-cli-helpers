@@ -101,13 +101,19 @@ az_group_list () {
 }
 
 az_group_delete () {
-    local RESOURCE_GROUP_NAME="$1"
-    if [[ -z "$RESOURCE_GROUP_NAME" ]]; then
+    if [[ -z "$1" ]]; then
         print_usage "Resource group name"
         return
     fi
 
+    local RESOURCE_GROUP_NAME="$1"
+
     az group delete -n "$RESOURCE_GROUP_NAME" -y --no-wait
+
+    if [[ -n "$AZLH_SSH_TUNNEL" ]]; then
+        local PUBLIC_IP_ADDRESS=$(az_network_public_ip_from_vm "$RESOURCE_GROUP_NAME")
+        sudo ip route del "$PUBLIC_IP_ADDRESS" dev "$AZLH_SSH_TUNNEL"
+    fi
 }
 
 az_group_delete_all () {
@@ -116,11 +122,14 @@ az_group_delete_all () {
         return
     fi
 
-    az group list -o table |
+    GROUPS_TO_DELETE=$(az group list -o table |
         grep -E "^$AZLH_PREFIX" |
         grep -vi "$AZLH_IGNORE" |
-        awk '{print $1}' |
-        xargs -rn 1 az group delete -y --no-wait -n
+        awk '{print $1}')
+
+    for GROUP in $GROUPS_TO_DELETE; do
+        az_group_delete "$GROUP"
+    done
 }
 
 ##################################################
@@ -189,29 +198,6 @@ az_vm_create () {
         local OSDISK_SIZE_EFF="$OSDISK_SIZE"
     fi
 
-    az network nsg create \
-        --name "$VM_NAME" \
-        --resource-group "$RG_NAME" > /dev/null
-    az network nsg rule create \
-        --name "$VM_NAME" \
-        --nsg-name "$VM_NAME" \
-        --priority 100 \
-        --resource-group "$RG_NAME" \
-        --access Allow --direction Inbound \
-        --source-address-prefixes $(curl -s ipinfo.io/ip) \
-        --destination-port-ranges 22 > /dev/null
-    az network vnet create \
-        --name "$VM_NAME" \
-        --resource-group "$RG_NAME" > /dev/null
-    az network vnet subnet create \
-        --name "$VM_NAME" \
-        --vnet-name "$VM_NAME" \
-        --resource-group "$RG_NAME" \
-        --address-prefixes "10.0.0.0/24" \
-        --network-security-group $(az network nsg show \
-            --resource-group "$RG_NAME" \
-            --name "$VM_NAME" --query id -o tsv) > /dev/null
-
     IFS='' read -r -d '' CMD << EOF
         az vm create \
             -g "$RG_NAME" \
@@ -227,10 +213,7 @@ az_vm_create () {
             --size "$VM_SIZE" \
             --accelerated-networking "$ACCELERATED_NETWORKING" \
             --os-disk-size-gb "$OSDISK_SIZE_EFF" \
-            --boot-diagnostics-storage "$STORAGE_ACCOUNT_NAME" \
-            --vnet-name "$VM_NAME" \
-            --subnet "$VM_NAME" \
-            --nsg "$VM_NAME"
+            --boot-diagnostics-storage "$STORAGE_ACCOUNT_NAME"
 EOF
 
     if [[ -n "$MSI" ]]; then
@@ -265,6 +248,11 @@ EOF
         --name "$RG_NAME" \
         --set tags."image=$IMAGE_PUBLISHER:$IMAGE_OFFER:$IMAGE_SKU:$IMAGE_VERSION ($IMAGE_EXACT_VERSION)" \
         --set tags.fqdn="$FULL_DNS_NAME" > /dev/null
+
+    if [[ -n "$AZLH_SSH_TUNNEL" ]]; then
+        local PUBLIC_IP_ADDRESS=$(az_network_public_ip_from_vm "$VM_NAME")
+        sudo ip route add "$PUBLIC_IP_ADDRESS" dev "$AZLH_SSH_TUNNEL"
+    fi
 
     echo "Resource group:  $RG_NAME"
     echo "VM name:         $VM_NAME"
@@ -618,6 +606,24 @@ az_network_public_ip_list () {
     fi
 
     az_network_public_ip_list | grep -E "^$AZLH_PREFIX" --color=never
+}
+
+az_network_public_ip_from_vm () {
+    if [[ -z "$1" ]]; then
+        echo "You must specify the VM name to generate the fqdn for"
+        return
+    fi
+
+    local VM_NAME="$1"
+
+    az network public-ip show \
+        --ids $(az network nic show \
+            --ids $(az vm show \
+                --name "$VM_NAME" \
+                --resource-group "$VM_NAME" \
+                --query "networkProfile.networkInterfaces[0].id" -o tsv) \
+            --query "ipConfigurations[0].publicIpAddress.id" -o tsv) \
+        --query "ipAddress" -o tsv
 }
 
 ##################################################
