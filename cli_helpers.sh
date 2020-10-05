@@ -59,6 +59,18 @@ az_account_summary () {
     echo "$USER in '$SUBSCRIPTION'"
 }
 
+az_account_personal () {
+    if [[ -n "$AZLH_ACCOUNT_PERSONAL" ]]; then
+        az account set -s "$AZLH_ACCOUNT_PERSONAL"
+    fi
+}
+
+az_account_work () {
+    if [[ -n "$AZLH_ACCOUNT_WORK" ]]; then
+        az account set -s "$AZLH_ACCOUNT_WORK"
+    fi
+}
+
 ##################################################
 # Resource group helpers.                        #
 ##################################################
