@@ -289,7 +289,7 @@ az_vm_create_from_vm () {
     if [[ -z "$SOURCE_VM" ]]; then
         print_usage \
             "Source VM" \
-            "(Optional) Notes"
+            "(Optional) Notes" \
             "(Optional) Custom data"
         return
     fi
