@@ -290,6 +290,7 @@ az_vm_create_from_vm () {
         print_usage \
             "Source VM" \
             "(Optional) Notes"
+            "(Optional) Custom data"
         return
     fi
 
@@ -297,8 +298,12 @@ az_vm_create_from_vm () {
         local NOTES="$2"
     fi
 
+    if [[ ! -z "$3" ]]; then
+        local CUSTOM_DATA="$3"
+    fi
+
     az_image_create_from_vm "$SOURCE_VM"
-    az_vm_create "$SOURCE_VM" "$NOTES"
+    az_vm_create "$SOURCE_VM" "$NOTES" "$CUSTOM_DATA"
 }
 
 az_vm_is_connectable () {
