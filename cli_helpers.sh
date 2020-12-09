@@ -215,7 +215,7 @@ az_vm_create () {
             -g "$RG_NAME" \
             -n "$VM_NAME" \
             -l "$AZLH_REGION" \
-            --ssh-key-value "$AZLH_SSH_KEY_FILE" \
+            --ssh-key-value $AZLH_SSH_KEY_FILE \
             --admin-username "$AZLH_ADMIN_USERNAME" \
             --admin-password "$ADMIN_PASSWORD" \
             --authentication-type "$AUTH_TYPE" \
