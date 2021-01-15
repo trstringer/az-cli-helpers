@@ -399,7 +399,7 @@ az_vm_ssh () {
         local SSH_COMMAND="$2"
     fi
 
-    ssh "$AZLH_ADMIN_USERNAME"@"$DNS_NAME" "$SSH_COMMAND"
+    ssh -J "$AZLH_ADMIN_USERNAME"@"$AZLH_PROXY_SERVER_PRIVATE_IP" "$AZLH_ADMIN_USERNAME"@"$DNS_NAME" "$SSH_COMMAND"
 }
 
 az_vm_scp_out () {
@@ -427,7 +427,8 @@ az_vm_scp_out () {
     local SOURCE_FILE="$2"
     local DESTINATION_FILE="$3"
 
-    scp -r \
+    scp -r -o \
+        ProxyJump="$AZLH_ADMIN_USERNAME"@$AZLH_PROXY_SERVER_PRIVATE_IP \
         "$SOURCE_FILE" \
         "$AZLH_ADMIN_USERNAME"@$(full_dns_name "$VM_NAME"):"$DESTINATION_FILE"
 }
@@ -589,8 +590,8 @@ az_vm_disk_recovery () {
     NEW_FQDN="$(full_dns_name $NEW_RESOURCE_NAME)"
 
     MOUNT_PATH="/mnt/recovery"
-    ssh $NEW_FQDN "sudo mkdir ${MOUNT_PATH}"
-    ssh $NEW_FQDN "sudo mount /dev/sdc1 ${MOUNT_PATH}"
+    az_vm_ssh $NEW_RESOURCE_NAME "sudo mkdir ${MOUNT_PATH}"
+    az_vm_ssh $NEW_RESOURCE_NAME "sudo mount /dev/sdc1 ${MOUNT_PATH}"
 
     echo "Disk available on ${NEW_FQDN} at ${MOUNT_PATH}"
 }
