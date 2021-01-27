@@ -458,7 +458,7 @@ az_vm_deb_install () {
 
     az_vm_ssh \
         "$VM_NAME" \
-        "sudo apt install -y ~/$SOURCE_DEB_FILENAME"
+        "sudo apt install -y --allow-downgrades ~/$SOURCE_DEB_FILENAME"
 }
 
 az_vm_yum_install () {
