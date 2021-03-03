@@ -166,6 +166,8 @@ az_vm_create () {
         echo "Optionally set OSDISK_SIZE env var to os disk size in GB (default 32 GB)."
         echo "Optionally set MSI env var to enable managed service identity."
         echo "Optionally set RESOURCE_NAME to override the resource name."
+        echo "Optionally set EXACT_IMAGE_ID to specify setting the exact image ID."
+        echo "Optionally set SKIP_RG_CREATE to skip the RG creation (must be pre-staged)."
         return
     fi
 
@@ -180,7 +182,11 @@ az_vm_create () {
     fi
     local IMAGE="$1"
     local NAME="${RESOURCE_NAME:-$(resource_name)}"
-    local RG_NAME=$(az_group_create "$NAME" "$NOTES")
+    if [[ ! -z "$SKIP_RG_CREATE" ]]; then
+        local RG_NAME="$RESOURCE_NAME"
+    else
+        local RG_NAME=$(az_group_create "$NAME" "$NOTES")
+    fi
     local VM_NAME="$NAME"
     local DNS_NAME="$NAME"
     local FULL_DNS_NAME=$(full_dns_name "$VM_NAME")
@@ -190,7 +196,11 @@ az_vm_create () {
     az_storage_account_create "$STORAGE_ACCOUNT_NAME"
 
     # First check to see if this is maybe a custom image.
-    local CUSTOM_IMAGE_ID=$(az image show -n "$IMAGE" -g "$IMAGE" --query "id" 2> /dev/null)
+    if [[ ! -z "$EXACT_IMAGE_ID" ]]; then
+        local CUSTOM_IMAGE_ID="$IMAGE"
+    else
+        local CUSTOM_IMAGE_ID=$(az image show -n "$IMAGE" -g "$IMAGE" --query "id" 2> /dev/null)
+    fi
     if [[ ! -z "$CUSTOM_IMAGE_ID" ]]; then
         local IMAGE="${CUSTOM_IMAGE_ID//\"}"
     fi
