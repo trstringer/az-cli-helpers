@@ -443,6 +443,37 @@ az_vm_scp_out () {
         "$AZLH_ADMIN_USERNAME"@$(full_dns_name "$VM_NAME"):"$DESTINATION_FILE"
 }
 
+az_vm_scp_in () {
+    if [[ -z "$1" ]]; then
+        print_usage \
+            "Target server" \
+            "Source remote file path" \
+            "Destination local file path"
+        return
+    elif [[ -z "$2" ]]; then
+        print_usage \
+            "Target server" \
+            "Source remote file path" \
+            "Destination local file path"
+        return
+    elif [[ -z "$3" ]]; then
+        print_usage \
+            "Target server" \
+            "Source remote file path" \
+            "Destination local file path"
+        return
+    fi
+
+    local VM_NAME="$1"
+    local SOURCE_FILE="$2"
+    local DESTINATION_FILE="$3"
+
+    scp -r -o \
+        ProxyJump="$AZLH_ADMIN_USERNAME"@$AZLH_PROXY_SERVER_PRIVATE_IP \
+        "$AZLH_ADMIN_USERNAME"@$(full_dns_name "$VM_NAME"):"$SOURCE_FILE" \
+        "$DESTINATION_FILE"
+}
+
 az_vm_deb_install () {
     if [[ -z "$1" ]]; then
         print_usage \
