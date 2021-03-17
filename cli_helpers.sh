@@ -503,8 +503,11 @@ az_vm_deb_install () {
 }
 
 az_vm_cloud_init_install () {
+    local CUSTOM_SCRIPT="$1"
+
     # Create the base resource for the image creation.
     RESOURCE_NAME=$(resource_name) && \
+    echo "Using $RESOURCE_NAME" && \
     az_vm_create_default && \
 
     # Build a new cloud-init deb package.
@@ -515,6 +518,13 @@ az_vm_cloud_init_install () {
     # Install the new cloud-init pkg.
     cd "$CWD" && \
     az_vm_deb_install "$RESOURCE_NAME" ~/dev/cloud-init/cloud-init_all.deb && \
+
+    # Source the custom script if there is anything to do.
+    # The custom script is sourced, so it does not have to have executable
+    # permissions. And because it is sourced you have access to RESOURCE_NAME.
+    if [[ -n "$CUSTOM_SCRIPT" ]]; then
+        source "$CUSTOM_SCRIPT"
+    fi
 
     # Create a new VM from the VM.
     OLD_RESOURCE_NAME="$RESOURCE_NAME" && \
