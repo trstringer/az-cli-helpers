@@ -502,6 +502,27 @@ az_vm_deb_install () {
         "sudo apt install -y --allow-downgrades ~/$SOURCE_DEB_FILENAME"
 }
 
+az_vm_cloud_init_install () {
+    # Create the base resource for the image creation.
+    RESOURCE_NAME=$(resource_name) && \
+    az_vm_create_default && \
+
+    # Build a new cloud-init deb package.
+    CWD=$(pwd) && \
+    cd ~/dev/cloud-init && \
+    ./packages/bddeb && \
+
+    # Install the new cloud-init pkg.
+    cd "$CWD" && \
+    az_vm_deb_install "$RESOURCE_NAME" ~/dev/cloud-init/cloud-init_all.deb && \
+
+    # Create a new VM from the VM.
+    OLD_RESOURCE_NAME="$RESOURCE_NAME" && \
+    unset RESOURCE_NAME && \
+    az_vm_create_from_vm "$OLD_RESOURCE_NAME" && \
+    echo "Completed cloud-init build and install!"
+}
+
 az_vm_yum_install () {
     if [[ -z "$1" ]]; then
         print_usage \
