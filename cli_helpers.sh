@@ -524,7 +524,7 @@ az_vm_cloud_init_install () {
     # permissions. And because it is sourced you have access to RESOURCE_NAME.
     if [[ -n "$CUSTOM_SCRIPT" ]]; then
         source "$CUSTOM_SCRIPT"
-    fi
+    fi && \
 
     # Create a new VM from the VM.
     OLD_RESOURCE_NAME="$RESOURCE_NAME" && \
