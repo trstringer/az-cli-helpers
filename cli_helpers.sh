@@ -530,7 +530,13 @@ az_vm_cloud_init_install () {
     OLD_RESOURCE_NAME="$RESOURCE_NAME" && \
     unset RESOURCE_NAME && \
     az_vm_ssh "$OLD_RESOURCE_NAME" "sudo cloud-init clean --logs" && \
+
+    if [[ -n "$NEW_RESOURCE_NAME" ]]; then
+        RESOURCE_NAME="$NEW_RESOURCE_NAME"
+    fi && \
+
     az_vm_create_from_vm "$OLD_RESOURCE_NAME" && \
+    unset RESOURCE_NAME && \
     echo "Completed cloud-init build and install!"
 }
 
