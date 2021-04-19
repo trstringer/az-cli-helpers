@@ -294,6 +294,15 @@ az_vm_create_default () {
     az_vm_create "$AZLH_DEFAULT_IMAGE_NAME" "$NOTES"
 }
 
+az_vm_create_ubuntu_focal () {
+    local NOTES=""
+    if [[ -n "$1" ]]; then
+        local NOTES="$1"
+    fi
+
+    az_vm_create "Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest" "$NOTES"
+}
+
 az_vm_create_from_vm () {
     local SOURCE_VM="$1"
     if [[ -z "$SOURCE_VM" ]]; then
