@@ -294,6 +294,15 @@ az_vm_create_default () {
     az_vm_create "$AZLH_DEFAULT_IMAGE_NAME" "$NOTES"
 }
 
+az_vm_create_ubuntu_bionic () {
+    local NOTES=""
+    if [[ -n "$1" ]]; then
+        local NOTES="$1"
+    fi
+
+    az_vm_create "Canonical:UbuntuServer:18.04-LTS:latest" "$NOTES"
+}
+
 az_vm_create_ubuntu_focal () {
     local NOTES=""
     if [[ -n "$1" ]]; then
