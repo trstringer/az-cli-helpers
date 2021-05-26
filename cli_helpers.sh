@@ -767,6 +767,8 @@ az_image_create_from_vm () {
 
     VM_GEN="${VM_GEN:-V1}"
 
+    az_vm_ssh "$VM_NAME" "sudo cloud-init clean --logs"
+
     if [[ -z "$NO_DEPROVISION" ]]; then
         # Deprovision the VM.
         az_vm_ssh "$VM_NAME" "sudo waagent -deprovision+user -force"
