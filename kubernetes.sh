@@ -19,8 +19,8 @@ az_aks_engine_create_minimal () {
 
     # Update kubectl config to add the new cluster and set the new
     # cluster as the current context.
-    KUBE_CONFIG_TEMP="${HOME}/.kube/config"
-    KUBE_CONFIG_TEMP_OLD="${KUBE_CONFIG_TEMP}.old"
+    local KUBE_CONFIG_TEMP="${HOME}/.kube/config"
+    local KUBE_CONFIG_TEMP_OLD="${KUBE_CONFIG_TEMP}.old"
     if [[ -f "$KUBE_CONFIG_TEMP" ]]; then
         mv "$KUBE_CONFIG_TEMP" "$KUBE_CONFIG_TEMP_OLD"
     fi
