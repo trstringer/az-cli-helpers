@@ -110,3 +110,66 @@ az_aks_engine_arc_create_minimal () {
         sleep 5
     done
 }
+
+##################################################
+# Open Service Mesh helpers.                     #
+##################################################
+az_osm_release_list () {
+    curl -s https://api.github.com/repos/openservicemesh/osm/releases |
+        jq ".[].name" -r |
+        tac
+}
+
+az_osm_release_install () {
+    local OSM_TEMP_PATH="/tmp/osm"
+    local OSM_DOWNLOAD_NAME="osm.tar.gz"
+    if [[ -d "$OSM_TEMP_PATH" ]]; then
+        rm -rf "$OSM_TEMP_PATH"
+    fi
+
+    RELEASE="$1"
+    if [[ -z "$RELEASE" ]]; then
+        print_usage "Release"
+        return
+    fi
+    echo "Installing release $RELEASE"
+
+    mkdir "$OSM_TEMP_PATH"
+    local CURRENT_DIR=$(pwd)
+    cd "$OSM_TEMP_PATH"
+    curl -sL \
+        -o "$OSM_DOWNLOAD_NAME" \
+        "https://github.com/openservicemesh/osm/releases/download/${RELEASE}/osm-${RELEASE}-linux-amd64.tar.gz"
+    tar -xzf "./${OSM_DOWNLOAD_NAME}"
+    cp ./linux-amd64/osm ~/bin/osm-release
+    if [[ -e "${HOME}/bin/osm" ]]; then
+        rm "${HOME}/bin/osm"
+    fi
+    ln -s "${HOME}/bin/osm-release" "${HOME}/bin/osm"
+
+    cd "$CURRENT_DIR"
+}
+
+az_osm_dev_install () {
+    local OSM_TEMP_PATH="/tmp/osm"
+    if [[ -d "$OSM_TEMP_PATH" ]]; then
+        rm -rf "$OSM_TEMP_PATH"
+    fi
+
+    local REPO="${OSM_REPO:-git@github.com:openservicemesh/osm.git}"
+    local BRANCH="${OSM_BRANCH:-main}"
+
+    git clone "$REPO" "$OSM_TEMP_PATH"
+    local CURRENT_DIR=$(pwd)
+    cd "$OSM_TEMP_PATH"
+    git checkout "$BRANCH"
+    make build-osm
+
+    mv ./bin/osm ~/bin/osm-dev
+    if [[ -e "${HOME}/bin/osm" ]]; then
+        rm "${HOME}/bin/osm"
+    fi
+    ln -s "${HOME}/bin/osm-dev" "${HOME}/bin/osm"
+
+    cd "$CURRENT_DIR"
+}
