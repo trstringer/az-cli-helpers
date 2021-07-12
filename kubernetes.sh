@@ -3,6 +3,46 @@ SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 ##################################################
 # Kubernetes helpers.                            #
 ##################################################
+az_aks_create_minimal () {
+    if [[ -z "$AZLH_PREFIX" ]]; then
+        echo "You must define AZLH_PREFIX"
+        return
+    fi
+
+    local NAME="${RESOURCE_NAME:-$(resource_name)}"
+
+    az_group_create "$NAME"
+    az aks create \
+        --resource-group "$NAME" \
+        --name "$NAME" \
+        --node-count 1
+
+    az aks get-credentials \
+        --resource-group "$NAME" \
+        --name "$NAME" \
+        --overwrite-existing
+}
+
+az_aks_create_medium () {
+    if [[ -z "$AZLH_PREFIX" ]]; then
+        echo "You must define AZLH_PREFIX"
+        return
+    fi
+
+    local NAME="${RESOURCE_NAME:-$(resource_name)}"
+
+    az_group_create "$NAME"
+    az aks create \
+        --resource-group "$NAME" \
+        --name "$NAME" \
+        --node-count 5
+
+    az aks get-credentials \
+        --resource-group "$NAME" \
+        --name "$NAME" \
+        --overwrite-existing
+}
+
 az_aks_engine_create_minimal () {
     if [[ -z "$AZLH_PREFIX" ]]; then
         echo "You must define AZLH_PREFIX"
