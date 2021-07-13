@@ -183,25 +183,24 @@ az_osm_cli_install_dev () {
 }
 
 az_osm_cluster_install () {
-    local OSM_TEMP_PATH="/tmp/osm"
-    if [[ -d "$OSM_TEMP_PATH" ]]; then
-        rm -rf "$OSM_TEMP_PATH"
-    fi
-
-    local REPO="${OSM_REPO:-git@github.com:openservicemesh/osm.git}"
-    local CURRENT_OSM_GIT_COMMIT=$(osm version |
-        tr ";" "\n" |
-        grep Commit |
-        awk '{print $2}')
-
-    git clone "$REPO" "$OSM_TEMP_PATH"
-    local CURRENT_DIR=$(pwd)
-    cd "$OSM_TEMP_PATH"
-    git checkout "$CURRENT_OSM_GIT_COMMIT"
-
     echo "Installing OSM on the cluster"
     ROOT_OSM=$(readlink -f $(which osm))
     if echo "$ROOT_OSM" | grep dev; then
+        local OSM_TEMP_PATH="/tmp/osm"
+        if [[ -d "$OSM_TEMP_PATH" ]]; then
+            rm -rf "$OSM_TEMP_PATH"
+        fi
+
+        local REPO="${OSM_REPO:-git@github.com:openservicemesh/osm.git}"
+        local CURRENT_OSM_GIT_COMMIT=$(osm version |
+            tr ";" "\n" |
+            grep Commit |
+            awk '{print $2}')
+
+        git clone "$REPO" "$OSM_TEMP_PATH"
+        local CURRENT_DIR=$(pwd)
+        cd "$OSM_TEMP_PATH"
+        git checkout "$CURRENT_OSM_GIT_COMMIT"
         echo "In a dev build. Building images"
         echo "Using OSM CLI from git commit $CURRENT_OSM_GIT_COMMIT"
         CURRENT_CLUSTER=$(kubectl config current-context)
@@ -231,10 +230,10 @@ az_osm_cluster_install () {
 
         osm install --set \
             OpenServiceMesh.image.registry="${CURRENT_CLUSTER}.azurecr.io/osm",OpenServiceMesh.image.tag=latest,OpenServiceMesh.imagePullSecrets[0].name="acr-creds"
+
+        cd "$CURRENT_DIR"
     else
         echo "Not in a dev build, using default images"
         osm install
     fi
-
-    cd "$CURRENT_DIR"
 }
