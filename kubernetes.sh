@@ -186,6 +186,8 @@ az_osm_cluster_install () {
     echo "Installing OSM on the cluster"
     ROOT_OSM=$(readlink -f $(which osm))
     if echo "$ROOT_OSM" | grep dev; then
+        echo "In a dev build. Building images"
+
         local OSM_TEMP_PATH="/tmp/osm"
         if [[ -d "$OSM_TEMP_PATH" ]]; then
             rm -rf "$OSM_TEMP_PATH"
@@ -201,10 +203,12 @@ az_osm_cluster_install () {
         local CURRENT_DIR=$(pwd)
         cd "$OSM_TEMP_PATH"
         git checkout "$CURRENT_OSM_GIT_COMMIT"
-        echo "In a dev build. Building images"
         echo "Using OSM CLI from git commit $CURRENT_OSM_GIT_COMMIT"
+
         CURRENT_CLUSTER=$(kubectl config current-context)
         echo "Using cluster $CURRENT_CLUSTER"
+
+        echo "Creating Azure Container Registry"
         az acr create \
             --resource-group "$CURRENT_CLUSTER" \
             --name "$CURRENT_CLUSTER" \
@@ -229,7 +233,9 @@ az_osm_cluster_install () {
         make docker-push
 
         osm install --set \
-            OpenServiceMesh.image.registry="${CURRENT_CLUSTER}.azurecr.io/osm",OpenServiceMesh.image.tag=latest,OpenServiceMesh.imagePullSecrets[0].name="acr-creds"
+OpenServiceMesh.image.registry="${CURRENT_CLUSTER}.azurecr.io/osm",\
+OpenServiceMesh.image.tag=latest,\
+OpenServiceMesh.imagePullSecrets[0].name="acr-creds"
 
         cd "$CURRENT_DIR"
     else
