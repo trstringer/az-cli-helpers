@@ -120,7 +120,7 @@ az_osm_release_list () {
         tac
 }
 
-az_osm_release_install () {
+az_osm_cli_install_release () {
     local OSM_TEMP_PATH="/tmp/osm"
     local OSM_DOWNLOAD_NAME="osm.tar.gz"
     if [[ -d "$OSM_TEMP_PATH" ]]; then
@@ -150,19 +150,27 @@ az_osm_release_install () {
     cd "$CURRENT_DIR"
 }
 
-az_osm_dev_install () {
+az_osm_cli_install_dev () {
     local OSM_TEMP_PATH="/tmp/osm"
     if [[ -d "$OSM_TEMP_PATH" ]]; then
         rm -rf "$OSM_TEMP_PATH"
     fi
 
+    local GIT_REF="$1"
+    if [[ -z "$GIT_REF" ]]; then
+        print_usage \
+            "Git ref (branch, tag, commit SHA) to install from. Use 'main' for default"
+
+        echo "Optionally set OSM_REPO for a non-default git repo (default git@github.com:openservicemesh/osm.git)"
+        return
+    fi
+
     local REPO="${OSM_REPO:-git@github.com:openservicemesh/osm.git}"
-    local BRANCH="${OSM_BRANCH:-main}"
 
     git clone "$REPO" "$OSM_TEMP_PATH"
     local CURRENT_DIR=$(pwd)
     cd "$OSM_TEMP_PATH"
-    git checkout "$BRANCH"
+    git checkout "$GIT_REF"
     make build-osm
 
     mv ./bin/osm ~/bin/osm-dev
@@ -170,6 +178,63 @@ az_osm_dev_install () {
         rm "${HOME}/bin/osm"
     fi
     ln -s "${HOME}/bin/osm-dev" "${HOME}/bin/osm"
+
+    cd "$CURRENT_DIR"
+}
+
+az_osm_cluster_install () {
+    local OSM_TEMP_PATH="/tmp/osm"
+    if [[ -d "$OSM_TEMP_PATH" ]]; then
+        rm -rf "$OSM_TEMP_PATH"
+    fi
+
+    local REPO="${OSM_REPO:-git@github.com:openservicemesh/osm.git}"
+    local CURRENT_OSM_GIT_COMMIT=$(osm version |
+        tr ";" "\n" |
+        grep Commit |
+        awk '{print $2}')
+
+    git clone "$REPO" "$OSM_TEMP_PATH"
+    local CURRENT_DIR=$(pwd)
+    cd "$OSM_TEMP_PATH"
+    git checkout "$CURRENT_OSM_GIT_COMMIT"
+
+    echo "Installing OSM on the cluster"
+    ROOT_OSM=$(readlink -f $(which osm))
+    if echo "$ROOT_OSM" | grep dev; then
+        echo "In a dev build. Building images"
+        echo "Using OSM CLI from git commit $CURRENT_OSM_GIT_COMMIT"
+        CURRENT_CLUSTER=$(kubectl config current-context)
+        echo "Using cluster $CURRENT_CLUSTER"
+        az acr create \
+            --resource-group "$CURRENT_CLUSTER" \
+            --name "$CURRENT_CLUSTER" \
+            --sku basic \
+            --admin-enabled
+        az acr login \
+            --name "$CURRENT_CLUSTER"
+
+        cp ./.env.example ./.env
+        sed -i "s|localhost:5000|${CURRENT_CLUSTER}.azurecr.io/osm|g" ./.env
+        sed -i "s|CTR_REGISTRY_PASSWORD=|CTR_REGISTRY_PASSWORD='$(az acr credential show --name $CURRENT_CLUSTER --query 'passwords[0].value' -o tsv)'|g" ./.env
+        sed -i 's|# export CTR_REGISTRY_CREDS_NAME=acr-creds|export CTR_REGISTRY_CREDS_NAME=acr-creds|' ./.env
+
+        local OSM_NAMESPACE="osm-system"
+        if ! kubectl get ns "$OSM_NAMESPACE"; then
+            kubectl create ns "$OSM_NAMESPACE"
+        fi
+
+        ./scripts/create-container-registry-creds.sh "$OSM_NAMESPACE"
+        source ./.env
+        make build
+        make docker-push
+
+        osm install --set \
+            OpenServiceMesh.image.registry="${CURRENT_CLUSTER}.azurecr.io/osm",OpenServiceMesh.image.tag=latest,OpenServiceMesh.imagePullSecrets[0].name="acr-creds"
+    else
+        echo "Not in a dev build, using default images"
+        osm install
+    fi
 
     cd "$CURRENT_DIR"
 }
