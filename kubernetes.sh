@@ -232,14 +232,141 @@ az_osm_cluster_install () {
         make build
         make docker-push
 
-        osm install --set \
-OpenServiceMesh.image.registry="${CURRENT_CLUSTER}.azurecr.io/osm",\
-OpenServiceMesh.image.tag=latest,\
-OpenServiceMesh.imagePullSecrets[0].name="acr-creds"
+        osm install \
+            --set=OpenServiceMesh.image.registry="${CURRENT_CLUSTER}.azurecr.io/osm" \
+            --set=OpenServiceMesh.image.tag=latest \
+            --set=OpenServiceMesh.imagePullSecrets[0].name="acr-creds" \
+            --set=OpenServiceMesh.enablePermissiveTrafficPolicy=true \
+            --set=OpenServiceMesh.deployPrometheus=true \
+            --set=OpenServiceMesh.deployGrafana=true \
+            --set=OpenServiceMesh.deployJaeger=true
 
         cd "$CURRENT_DIR"
     else
         echo "Not in a dev build, using default images"
-        osm install
+        osm install \
+            --set=OpenServiceMesh.enablePermissiveTrafficPolicy=true \
+            --set=OpenServiceMesh.deployPrometheus=true \
+            --set=OpenServiceMesh.deployGrafana=true \
+            --set=OpenServiceMesh.deployJaeger=true
     fi
+}
+
+az_osm_app_install () {
+    echo "Installing sample OSM app"
+
+    kubectl create namespace bookstore
+    kubectl create namespace bookbuyer
+    kubectl create namespace bookthief
+    kubectl create namespace bookwarehouse
+
+    osm namespace add bookstore
+    osm namespace add bookbuyer
+    osm namespace add bookthief
+    osm namespace add bookwarehouse
+
+    local OSM_TEMP_PATH="/tmp/osm"
+    if [[ -d "$OSM_TEMP_PATH" ]]; then
+        rm -rf "$OSM_TEMP_PATH"
+    fi
+
+    local REPO="${OSM_REPO:-git@github.com:openservicemesh/osm.git}"
+    local CURRENT_OSM_GIT_COMMIT=$(osm version |
+        tr ";" "\n" |
+        grep Commit |
+        awk '{print $2}')
+
+    git clone "$REPO" "$OSM_TEMP_PATH"
+    local CURRENT_DIR=$(pwd)
+    cd "$OSM_TEMP_PATH"
+    git checkout "$CURRENT_OSM_GIT_COMMIT"
+    echo "Using OSM CLI from git commit $CURRENT_OSM_GIT_COMMIT"
+
+    CURRENT_CLUSTER=$(kubectl config current-context)
+    echo "Using cluster $CURRENT_CLUSTER"
+
+    echo "Creating Azure Container Registry if it does not exist"
+    if ! az acr show --name "$CURRENT_CLUSTER"; then
+        echo "Creating ACR"
+        az acr create \
+            --resource-group "$CURRENT_CLUSTER" \
+            --name "$CURRENT_CLUSTER" \
+            --sku basic \
+            --admin-enabled
+        az acr login \
+            --name "$CURRENT_CLUSTER"
+    fi
+
+    cp ./.env.example ./.env
+    sed -i "s|localhost:5000|${CURRENT_CLUSTER}.azurecr.io/osm|g" ./.env
+    sed -i "s|CTR_REGISTRY_PASSWORD=|CTR_REGISTRY_PASSWORD='$(az acr credential show --name $CURRENT_CLUSTER --query 'passwords[0].value' -o tsv)'|g" ./.env
+    sed -i 's|# export CTR_REGISTRY_CREDS_NAME=acr-creds|export CTR_REGISTRY_CREDS_NAME=acr-creds|' ./.env
+
+    local OSM_NAMESPACE="osm-system"
+    if ! kubectl get ns "$OSM_NAMESPACE"; then
+        kubectl create ns "$OSM_NAMESPACE"
+    fi
+
+    ./scripts/create-container-registry-creds.sh "$OSM_NAMESPACE"
+    source ./.env
+    make build
+    make docker-push
+
+    BOOKBUYER_MANIFEST="${OSM_TEMP_PATH}/docs/example/manifests/apps/bookbuyer.yaml"
+    ./scripts/create-container-registry-creds.sh "bookbuyer"
+    sed -i \
+        "/\s\+containers:/i\      imagePullSecrets:\n        - name: acr-creds" \
+        "$BOOKBUYER_MANIFEST"
+    sed -i \
+        "s|openservicemesh/bookbuyer.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookbuyer:latest|g" \
+        "$BOOKBUYER_MANIFEST"
+
+    BOOKTHIEF_MANIFEST="${OSM_TEMP_PATH}/docs/example/manifests/apps/bookthief.yaml"
+    ./scripts/create-container-registry-creds.sh "bookthief"
+    sed -i \
+        "/\s\+containers:/i\      imagePullSecrets:\n        - name: acr-creds" \
+        "$BOOKTHIEF_MANIFEST"
+    sed -i \
+        "s|openservicemesh/bookthief.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookthief:latest|g" \
+        "$BOOKTHIEF_MANIFEST"
+
+    BOOKSTORE_MANIFEST="${OSM_TEMP_PATH}/docs/example/manifests/apps/bookstore.yaml"
+    ./scripts/create-container-registry-creds.sh "bookstore"
+    sed -i \
+        "/\s\+containers:/i\      imagePullSecrets:\n        - name: acr-creds" \
+        "$BOOKSTORE_MANIFEST"
+    sed -i \
+        "s|openservicemesh/bookstore.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookstore:latest|g" \
+        "$BOOKSTORE_MANIFEST"
+
+    BOOKWAREHOUSE_MANIFEST="${OSM_TEMP_PATH}/docs/example/manifests/apps/bookwarehouse.yaml"
+    ./scripts/create-container-registry-creds.sh "bookwarehouse"
+    sed -i \
+        "/\s\+containers:/i\      imagePullSecrets:\n        - name: acr-creds" \
+        "$BOOKWAREHOUSE_MANIFEST"
+    sed -i \
+        "s|openservicemesh/bookwarehouse.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookwarehouse:latest|g" \
+        "$BOOKWAREHOUSE_MANIFEST"
+
+    echo "Creating applications"
+    kubectl apply -f "${OSM_TEMP_PATH}/docs/example/manifests/apps/bookbuyer.yaml"
+    kubectl apply -f "${OSM_TEMP_PATH}/docs/example/manifests/apps/bookthief.yaml"
+    kubectl apply -f "${OSM_TEMP_PATH}/docs/example/manifests/apps/bookstore.yaml"
+    kubectl apply -f "${OSM_TEMP_PATH}/docs/example/manifests/apps/bookwarehouse.yaml"
+
+    cd "$CURRENT_DIR"
+}
+
+az_osm_app_uninstall () {
+    echo "Removing the sample OSM app from the cluster"
+
+    osm namespace remove bookstore
+    osm namespace remove bookbuyer
+    osm namespace remove bookthief
+    osm namespace remove bookwarehouse
+
+    kubectl delete namespace bookstore
+    kubectl delete namespace bookbuyer
+    kubectl delete namespace bookthief
+    kubectl delete namespace bookwarehouse
 }
