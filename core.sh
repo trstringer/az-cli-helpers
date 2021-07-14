@@ -143,3 +143,21 @@ az_group_delete_all () {
         az_group_delete "$GROUP"
     done
 }
+
+az_group_notes_add () {
+    local RG_NAME="$1"
+    local NOTES="$2"
+    if [[ -z "$NOTES" || -z "$RG_NAME" ]]; then
+        print_usage \
+            "Resource group name" \
+            "Notes to add"
+        return
+    fi
+
+    az tag update \
+        --resource-id $(az group show \
+            --name "$RG_NAME" \
+            --query id -o tsv) \
+        --operation merge \
+        --tags notes="$NOTES" > /dev/null
+}
