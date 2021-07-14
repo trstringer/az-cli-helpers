@@ -370,3 +370,17 @@ az_osm_app_uninstall () {
     kubectl delete namespace bookthief
     kubectl delete namespace bookwarehouse
 }
+
+az_osm_cluster_smi_traffic_policy_mode_enable () {
+    kubectl patch meshconfig osm-mesh-config \
+        --namespace osm-system \
+        --patch '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":false}}}'  \
+        --type=merge
+}
+
+az_osm_cluster_smi_traffic_policy_mode_disable () {
+    kubectl patch meshconfig osm-mesh-config \
+        --namespace osm-system \
+        --patch '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":true}}}'  \
+        --type=merge
+}
