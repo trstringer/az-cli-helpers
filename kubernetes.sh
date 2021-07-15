@@ -11,7 +11,7 @@ az_aks_create_minimal () {
 
     local NAME="${RESOURCE_NAME:-$(resource_name)}"
 
-    az_group_create "$NAME"
+    az_group_create "$NAME" > /dev/null
 
     NOTES="$1"
     if [[ -n "$NOTES" ]]; then
@@ -37,7 +37,7 @@ az_aks_create_medium () {
 
     local NAME="${RESOURCE_NAME:-$(resource_name)}"
 
-    az_group_create "$NAME"
+    az_group_create "$NAME" > /dev/null
 
     NOTES="$1"
     if [[ -n "$NOTES" ]]; then
@@ -67,7 +67,7 @@ az_aks_engine_create_minimal () {
         local NAME="${RESOURCE_NAME:-$(resource_name)}"
     fi
 
-    az_group_create "$NAME"
+    az_group_create "$NAME" > /dev/null
 
     NOTES="$1"
     if [[ -n "$NOTES" ]]; then
