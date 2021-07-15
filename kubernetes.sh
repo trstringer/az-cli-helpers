@@ -201,6 +201,11 @@ az_osm_cli_install_dev () {
 }
 
 az_osm_cluster_install () {
+    local ADDITIONAL_OSM_OPTIONS="$1"
+    if [[ -n "$ADDITIONAL_OSM_OPTIONS" ]]; then
+        ADDITIONAL_OSM_OPTIONS="--set=${ADDITIONAL_OSM_OPTIONS}"
+    fi
+
     echo "Installing OSM on the cluster"
     ROOT_OSM=$(readlink -f $(which osm))
     if echo "$ROOT_OSM" | grep dev; then
@@ -257,7 +262,8 @@ az_osm_cluster_install () {
             --set=OpenServiceMesh.enablePermissiveTrafficPolicy=true \
             --set=OpenServiceMesh.deployPrometheus=true \
             --set=OpenServiceMesh.deployGrafana=true \
-            --set=OpenServiceMesh.deployJaeger=true
+            --set=OpenServiceMesh.deployJaeger=true \
+            "$ADDITIONAL_OSM_OPTIONS"
 
         cd "$CURRENT_DIR"
     else
@@ -266,7 +272,8 @@ az_osm_cluster_install () {
             --set=OpenServiceMesh.enablePermissiveTrafficPolicy=true \
             --set=OpenServiceMesh.deployPrometheus=true \
             --set=OpenServiceMesh.deployGrafana=true \
-            --set=OpenServiceMesh.deployJaeger=true
+            --set=OpenServiceMesh.deployJaeger=true \
+            "$ADDITIONAL_OSM_OPTIONS"
     fi
 }
 
