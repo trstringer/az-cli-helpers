@@ -12,6 +12,12 @@ az_aks_create_minimal () {
     local NAME="${RESOURCE_NAME:-$(resource_name)}"
 
     az_group_create "$NAME"
+
+    NOTES="$1"
+    if [[ -n "$NOTES" ]]; then
+        az_group_notes_add "$NAME" "$NOTES"
+    fi
+
     az aks create \
         --resource-group "$NAME" \
         --name "$NAME" \
@@ -32,6 +38,12 @@ az_aks_create_medium () {
     local NAME="${RESOURCE_NAME:-$(resource_name)}"
 
     az_group_create "$NAME"
+
+    NOTES="$1"
+    if [[ -n "$NOTES" ]]; then
+        az_group_notes_add "$NAME" "$NOTES"
+    fi
+
     az aks create \
         --resource-group "$NAME" \
         --name "$NAME" \
@@ -56,6 +68,12 @@ az_aks_engine_create_minimal () {
     fi
 
     az_group_create "$NAME"
+
+    NOTES="$1"
+    if [[ -n "$NOTES" ]]; then
+        az_group_notes_add "$NAME" "$NOTES"
+    fi
+
     aks-engine deploy \
         --resource-group "$NAME" \
         --api-model "${SCRIPT_PATH}/aks-engine-minimal.json" \
@@ -84,7 +102,7 @@ az_aks_engine_arc_create_minimal () {
     local NAME="${RESOURCE_NAME:-$(resource_name)}"
     RESOURCE_NAME_INTERNAL="$NAME"
 
-    az_aks_engine_create_minimal
+    az_aks_engine_create_minimal "$1"
 
     while true; do
         echo "$(date) - Waiting for cluster to come up"
