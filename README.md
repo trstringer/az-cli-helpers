@@ -21,17 +21,7 @@ export AZLH_DEFAULT_IMAGE_NAME="Debian:Debian-10:10:latest"
 export AZLH_SSH_KEY_FILE="..."
 ```
 
-3. Add the following to `~/.bashrc`:
-
-```
-# Import Azure CLI helpers.
-CLI_HELPERS_SCRIPT="/home/trstringer/dev/azure/cli_helpers.sh"
-if [[ -f "$CLI_HELPERS_SCRIPT"  ]]; then
-    source "$CLI_HELPERS_SCRIPT"
-fi
-```
-
-Note: Change `$CLI_HELPERS_SCRIPT` to the correct location of the script on your machine.
+3. Source the scripts. At the very least you need to source `./core.sh` and then subsequently you source any and all scripts that you want to use.
 
 ### Reference
 
