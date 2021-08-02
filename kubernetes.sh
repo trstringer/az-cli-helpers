@@ -244,6 +244,7 @@ az_osm_cluster_install () {
         sed -i "s|localhost:5000|${CURRENT_CLUSTER}.azurecr.io/osm|g" ./.env
         sed -i "s|CTR_REGISTRY_PASSWORD=|CTR_REGISTRY_PASSWORD='$(az acr credential show --name $CURRENT_CLUSTER --query 'passwords[0].value' -o tsv)'|g" ./.env
         sed -i 's|# export CTR_REGISTRY_CREDS_NAME=acr-creds|export CTR_REGISTRY_CREDS_NAME=acr-creds|' ./.env
+        sed -i 's|#export USE_PRIVATE_REGISTRY=false|export USE_PRIVATE_REGISTRY=true|' ./.env
 
         local OSM_NAMESPACE="osm-system"
         if ! kubectl get ns "$OSM_NAMESPACE"; then
@@ -328,6 +329,7 @@ az_osm_app_install () {
     sed -i "s|localhost:5000|${CURRENT_CLUSTER}.azurecr.io/osm|g" ./.env
     sed -i "s|CTR_REGISTRY_PASSWORD=|CTR_REGISTRY_PASSWORD='$(az acr credential show --name $CURRENT_CLUSTER --query 'passwords[0].value' -o tsv)'|g" ./.env
     sed -i 's|# export CTR_REGISTRY_CREDS_NAME=acr-creds|export CTR_REGISTRY_CREDS_NAME=acr-creds|' ./.env
+    sed -i 's|#export USE_PRIVATE_REGISTRY=false|export USE_PRIVATE_REGISTRY=true|' ./.env
 
     local OSM_NAMESPACE="osm-system"
     if ! kubectl get ns "$OSM_NAMESPACE"; then
