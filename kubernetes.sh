@@ -339,13 +339,15 @@ az_osm_app_install () {
     make build
     make docker-push
 
+    local IMAGE_TAG="${CTR_TAG:-latest}"
+
     BOOKBUYER_MANIFEST="${OSM_TEMP_PATH}/docs/example/manifests/apps/bookbuyer.yaml"
     ./scripts/create-container-registry-creds.sh "bookbuyer"
     sed -i \
         "/\s\+containers:/i\      imagePullSecrets:\n        - name: acr-creds" \
         "$BOOKBUYER_MANIFEST"
     sed -i \
-        "s|openservicemesh/bookbuyer.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookbuyer:latest|g" \
+        "s|openservicemesh/bookbuyer.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookbuyer:${IMAGE_TAG}|g" \
         "$BOOKBUYER_MANIFEST"
 
     BOOKTHIEF_MANIFEST="${OSM_TEMP_PATH}/docs/example/manifests/apps/bookthief.yaml"
@@ -354,7 +356,7 @@ az_osm_app_install () {
         "/\s\+containers:/i\      imagePullSecrets:\n        - name: acr-creds" \
         "$BOOKTHIEF_MANIFEST"
     sed -i \
-        "s|openservicemesh/bookthief.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookthief:latest|g" \
+        "s|openservicemesh/bookthief.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookthief:${IMAGE_TAG}|g" \
         "$BOOKTHIEF_MANIFEST"
 
     BOOKSTORE_MANIFEST="${OSM_TEMP_PATH}/docs/example/manifests/apps/bookstore.yaml"
@@ -363,7 +365,7 @@ az_osm_app_install () {
         "/\s\+containers:/i\      imagePullSecrets:\n        - name: acr-creds" \
         "$BOOKSTORE_MANIFEST"
     sed -i \
-        "s|openservicemesh/bookstore.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookstore:latest|g" \
+        "s|openservicemesh/bookstore.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookstore:${IMAGE_TAG}|g" \
         "$BOOKSTORE_MANIFEST"
 
     BOOKWAREHOUSE_MANIFEST="${OSM_TEMP_PATH}/docs/example/manifests/apps/bookwarehouse.yaml"
@@ -372,7 +374,7 @@ az_osm_app_install () {
         "/\s\+containers:/i\      imagePullSecrets:\n        - name: acr-creds" \
         "$BOOKWAREHOUSE_MANIFEST"
     sed -i \
-        "s|openservicemesh/bookwarehouse.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookwarehouse:latest|g" \
+        "s|openservicemesh/bookwarehouse.*$|${CURRENT_CLUSTER}.azurecr.io/osm/bookwarehouse:${IMAGE_TAG}|g" \
         "$BOOKWAREHOUSE_MANIFEST"
 
     echo "Creating applications"
