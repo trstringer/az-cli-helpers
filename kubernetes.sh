@@ -255,9 +255,11 @@ az_osm_cluster_install () {
         make build
         make docker-push
 
+        local IMAGE_TAG="${CTR_TAG:-latest}"
+
         osm install \
             --set=OpenServiceMesh.image.registry="${CURRENT_CLUSTER}.azurecr.io/osm" \
-            --set=OpenServiceMesh.image.tag=latest \
+            --set=OpenServiceMesh.image.tag="$IMAGE_TAG" \
             --set=OpenServiceMesh.imagePullSecrets[0].name="acr-creds" \
             --set=OpenServiceMesh.enablePermissiveTrafficPolicy=true \
             --set=OpenServiceMesh.deployPrometheus=true \
