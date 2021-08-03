@@ -423,6 +423,8 @@ az_osm_arc_cluster_install () {
     local OSM_VERSION
     OSM_VERSION="0.9.1"
 
+    echo '{"osm.OpenServiceMesh.deployPrometheus": "true"}' > /tmp/osm-arc-config.json
+
     az_osm_cli_install_release "v${OSM_VERSION}"
 
     az k8s-extension create \
@@ -433,5 +435,6 @@ az_osm_arc_cluster_install () {
         --scope "cluster" \
         --release-train "pilot" \
         --name "osm" \
-        --version "$OSM_VERSION"
+        --version "$OSM_VERSION" \
+        --configuration-settings-file /tmp/osm-arc-config.json
 }
