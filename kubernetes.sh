@@ -415,3 +415,23 @@ az_osm_cluster_smi_traffic_policy_mode_disable () {
         --patch '{"spec":{"traffic":{"enablePermissiveTrafficPolicyMode":true}}}'  \
         --type=merge
 }
+
+az_osm_arc_cluster_install () {
+    local CURRENT_CLUSTER
+    CURRENT_CLUSTER=$(kubectl config current-context)
+
+    local OSM_VERSION
+    OSM_VERSION="0.9.1"
+
+    az_osm_cli_install_release "v${OSM_VERSION}"
+
+    az k8s-extension create \
+        --resource-group "$CURRENT_CLUSTER" \
+        --cluster-name "$CURRENT_CLUSTER" \
+        --cluster-type "connectedClusters" \
+        --extension-type "Microsoft.openservicemesh" \
+        --scope "cluster" \
+        --release-train "pilot" \
+        --name "osm" \
+        --version "$OSM_VERSION"
+}
