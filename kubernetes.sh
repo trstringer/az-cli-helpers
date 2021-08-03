@@ -438,3 +438,65 @@ az_osm_arc_cluster_install () {
         --version "$OSM_VERSION" \
         --configuration-settings-file /tmp/osm-arc-config.json
 }
+
+az_osm_arc_monitoring_enable () {
+    local CURRENT_CLUSTER
+    CURRENT_CLUSTER=$(kubectl config current-context)
+
+    osm namespace list |
+        grep -v "NAMESPACE" |
+        awk '{print $1}' |
+        xargs -rn 1 osm metrics enable --namespace
+
+    local WORKSPACE_ID
+    WORKSPACE_ID=$(az monitor log-analytics workspace show \
+        --resource-group "$CURRENT_CLUSTER" \
+        --workspace-name "$CURRENT_CLUSTER" \
+        --query id -o tsv)
+
+    if [[ -z "$WORKSPACE_ID" ]]; then
+        az monitor log-analytics workspace create \
+            --resource-group "$CURRENT_CLUSTER" \
+            --workspace-name "$CURRENT_CLUSTER"
+        WORKSPACE_ID=$(az monitor log-analytics workspace show \
+            --resource-group "$CURRENT_CLUSTER" \
+            --workspace-name "$CURRENT_CLUSTER" \
+            --query id -o tsv)
+    fi
+
+    az k8s-extension create \
+        --cluster-name "$CURRENT_CLUSTER" \
+        --resource-group "$CURRENT_CLUSTER" \
+        --cluster-type connectedClusters \
+        --extension-type Microsoft.AzureMonitor.Containers \
+        --configuration-settings "logAnalyticsWorkspaceResourceID=${WORKSPACE_ID}"
+
+    local NAMESPACES_TO_MONITOR
+    NAMESPACES_TO_MONITOR=$(osm namespace list |
+        grep -v "NAMESPACE" |
+        awk '{print  "\"" $1 "\""}' |
+        tr '\n' ',')
+    NAMESPACES_TO_MONITOR=${NAMESPACES_TO_MONITOR::-1}
+
+    cat <<EOF > /tmp/monitoring-config-map.yaml
+kind: ConfigMap
+apiVersion: v1
+data:
+  schema-version:
+    #string.used by agent to parse OSM config. supported versions are {v1}. Configs with other schema versions will be rejected by the agent.
+    v1
+  config-version:
+    #string.used by OSM addon team to keep track of this config file's version in their source control/repository (max allowed 10 chars, other chars will be truncated)
+    ver1
+  osm-metric-collection-configuration: |-
+    # OSM metric collection settings
+    [osm_metric_collection_configuration.settings]
+        # Namespaces to monitor
+        monitor_namespaces = [$NAMESPACES_TO_MONITOR]
+metadata:
+  name: container-azm-ms-osmconfig
+  namespace: kube-system
+EOF
+
+    kubectl apply -f /tmp/monitoring-config-map.yaml
+}
