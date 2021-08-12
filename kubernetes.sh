@@ -56,8 +56,28 @@ az_aks_create_medium () {
 }
 
 az_aks_engine_create_minimal () {
+    az_aks_engine_create "minimal" "$1"
+}
+
+az_aks_engine_create_medium () {
+    az_aks_engine_create "medium" "$1"
+}
+
+az_aks_engine_create () {
     if [[ -z "$AZLH_PREFIX" ]]; then
         echo "You must define AZLH_PREFIX"
+        return
+    fi
+
+    local CLUSTER_SIZE="$1"
+    if [[ -z "$CLUSTER_SIZE" ]]; then
+        print_usage "Desired cluster size (minimal, medium, large)"
+        return
+    fi
+
+    local API_MODEL="${SCRIPT_PATH}/aks-engine-${CLUSTER_SIZE}.json"
+    if [[ ! -f "$API_MODEL" ]]; then
+        echo "$API_MODEL not found"
         return
     fi
 
@@ -69,14 +89,14 @@ az_aks_engine_create_minimal () {
 
     az_group_create "$NAME" > /dev/null
 
-    NOTES="$1"
+    NOTES="$2"
     if [[ -n "$NOTES" ]]; then
         az_group_notes_add "$NAME" "$NOTES"
     fi
 
     aks-engine deploy \
         --resource-group "$NAME" \
-        --api-model "${SCRIPT_PATH}/aks-engine-minimal.json" \
+        --api-model "$API_MODEL" \
         --dns-prefix "$NAME" \
         --location "$AZLH_REGION"
 
@@ -94,15 +114,36 @@ az_aks_engine_create_minimal () {
 }
 
 az_aks_engine_arc_create_minimal () {
+    az_aks_engine_arc_create "minimal" "$1"
+}
+
+az_aks_engine_arc_create_medium () {
+    az_aks_engine_arc_create "medium" "$1"
+}
+
+az_aks_engine_arc_create () {
     if [[ -z "$AZLH_PREFIX" ]]; then
         echo "You must define AZLH_PREFIX"
+        return
+    fi
+
+    local CLUSTER_SIZE="$1"
+    if [[ -z "$CLUSTER_SIZE" ]]; then
+        print_usage "Desired cluster size (minimal, medium, large)"
         return
     fi
 
     local NAME="${RESOURCE_NAME:-$(resource_name)}"
     RESOURCE_NAME_INTERNAL="$NAME"
 
-    az_aks_engine_create_minimal "$1"
+    if [[ "$CLUSTER_SIZE" == "minimal" ]]; then
+        az_aks_engine_create_minimal "$2"
+    elif [[ "$CLUSTER_SIZE" == "medium" ]]; then
+        az_aks_engine_create_medium "$2"
+    else
+        echo "Unknown cluster size '$CLUSTER_SIZE'"
+        return
+    fi
 
     while true; do
         echo "$(date) - Waiting for cluster to come up"

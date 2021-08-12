@@ -1,0 +1,40 @@
+{
+	"apiVersion": "vlabs",
+	"properties": {
+		"orchestratorProfile": {
+			"orchestratorType": "Kubernetes"
+		},
+		"masterProfile": {
+			"count": 3,
+			"dnsPrefix": "",
+			"subjectAltNames": null,
+			"vmSize": "Standard_DS1_v2",
+			"osDiskSizeGB": 32,
+			"oauthEnabled": false,
+			"preProvisionExtension": null,
+			"extensions": null,
+			"availabilityProfile": "",
+			"platformUpdateDomainCount": null
+		},
+		"agentPoolProfiles": [
+			{
+				"name": "agent",
+				"count": 5,
+				"vmSize": "Standard_DS1_v2",
+				"osDiskSizeGB": 32,
+				"availabilityProfile": "",
+				"storageProfile": "",
+				"fqdn": "",
+				"preProvisionExtension": null,
+				"extensions": null,
+				"platformUpdateDomainCount": null
+			}
+		],
+		"linuxProfile": {
+			"adminUsername": "azureuser",
+			"ssh": {
+				"publicKeys": null
+			}
+		}
+	}
+}
