@@ -541,3 +541,21 @@ EOF
 
     kubectl apply -f /tmp/monitoring-config-map.yaml
 }
+
+##################################################
+# Arc helpers.                                   #
+##################################################
+az_arc_osm_install () {
+    local CURRENT_CLUSTER
+    CURRENT_CLUSTER=$(kubectl config current-context)
+
+    az k8s-extension create \
+        --resource-group "$CURRENT_CLUSTER" \
+        --cluster-name "$CURRENT_CLUSTER" \
+        --cluster-type connectedClusters \
+        --extension-type "microsoft.openservicemesh" \
+        --scope cluster \
+        --release-train pilot \
+        --name osm \
+        --version "0.9.1"
+}
