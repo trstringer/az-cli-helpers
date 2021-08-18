@@ -545,7 +545,28 @@ EOF
 ##################################################
 # Arc helpers.                                   #
 ##################################################
-az_arc_osm_install () {
+az_arc_osm_install_pilot_release () {
+    local CURRENT_CLUSTER
+    CURRENT_CLUSTER=$(kubectl config current-context)
+
+    local RELEASE="$1"
+    if [[ -z "$RELEASE" ]]; then
+        print_usage "Arc OSM release to install"
+        return
+    fi
+
+    az k8s-extension create \
+        --resource-group "$CURRENT_CLUSTER" \
+        --cluster-name "$CURRENT_CLUSTER" \
+        --cluster-type connectedClusters \
+        --extension-type "microsoft.openservicemesh" \
+        --scope cluster \
+        --release-train pilot \
+        --name osm \
+        --version "$RELEASE"
+}
+
+az_arc_osm_install_pilot_latest () {
     local CURRENT_CLUSTER
     CURRENT_CLUSTER=$(kubectl config current-context)
 
@@ -556,6 +577,5 @@ az_arc_osm_install () {
         --extension-type "microsoft.openservicemesh" \
         --scope cluster \
         --release-train pilot \
-        --name osm \
-        --version "0.9.1"
+        --name osm
 }
