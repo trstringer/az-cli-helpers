@@ -545,37 +545,33 @@ EOF
 ##################################################
 # Arc helpers.                                   #
 ##################################################
-az_arc_osm_install_pilot_release () {
-    local CURRENT_CLUSTER
-    CURRENT_CLUSTER=$(kubectl config current-context)
+az_arc_osm_install () {
+    local RELEASE_TRAIN
+    RELEASE_TRAIN="$1"
+    local VERSION
+    VERSION="$2"
 
-    local RELEASE="$1"
-    if [[ -z "$RELEASE" ]]; then
-        print_usage "Arc OSM release to install"
+    if [[ -z "$RELEASE_TRAIN" ]]; then
+        print_usage \
+            "Release train" \
+            "(Optional) Version (defaults to latest)"
         return
     fi
 
-    az k8s-extension create \
-        --resource-group "$CURRENT_CLUSTER" \
-        --cluster-name "$CURRENT_CLUSTER" \
-        --cluster-type connectedClusters \
-        --extension-type "microsoft.openservicemesh" \
-        --scope cluster \
-        --release-train pilot \
-        --name osm \
-        --version "$RELEASE"
-}
+    IFS='' read -r -d '' CMD << EOF
+        az k8s-extension create \
+            --resource-group "$CURRENT_CLUSTER" \
+            --cluster-name "$CURRENT_CLUSTER" \
+            --cluster-type connectedClusters \
+            --extension-type "microsoft.openservicemesh" \
+            --scope cluster \
+            --release-train "$RELEASE_TRAIN" \
+            --name osm
+EOF
 
-az_arc_osm_install_pilot_latest () {
-    local CURRENT_CLUSTER
-    CURRENT_CLUSTER=$(kubectl config current-context)
+    if [[ -n "$VERSION" ]]; then
+        CMD="$(echo "$CMD" | tr -d '\n') --version $VERSION"
+    fi
 
-    az k8s-extension create \
-        --resource-group "$CURRENT_CLUSTER" \
-        --cluster-name "$CURRENT_CLUSTER" \
-        --cluster-type connectedClusters \
-        --extension-type "microsoft.openservicemesh" \
-        --scope cluster \
-        --release-train pilot \
-        --name osm
+    bash -c "$CMD"
 }
