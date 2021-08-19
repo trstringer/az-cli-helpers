@@ -554,10 +554,14 @@ az_arc_osm_install () {
     if [[ -z "$RELEASE_TRAIN" ]]; then
         print_usage \
             "Release train" \
-            "(Optional) Version (defaults to latest)"
+            "(Optional) Version (defaults to latest)" \
+
+        echo "Optionally set AZLH_AUTO_UPGRADE (true or false)"
         return
     fi
 
+    local CURRENT_CLUSTER
+    CURRENT_CLUSTER=$(kubectl config current-context)
     IFS='' read -r -d '' CMD << EOF
         az k8s-extension create \
             --resource-group "$CURRENT_CLUSTER" \
@@ -571,6 +575,10 @@ EOF
 
     if [[ -n "$VERSION" ]]; then
         CMD="$(echo "$CMD" | tr -d '\n') --version $VERSION"
+    fi
+
+    if [[ -n "$AZLH_AUTO_UPGRADE" ]]; then
+        CMD="$(echo "$CMD" | tr -d '\n') --auto-upgrade-minor-version $AZLH_AUTO_UPGRADE"
     fi
 
     bash -c "$CMD"
