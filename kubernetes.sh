@@ -4,34 +4,24 @@ SCRIPT_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 # Kubernetes helpers.                            #
 ##################################################
 az_aks_create_minimal () {
-    if [[ -z "$AZLH_PREFIX" ]]; then
-        echo "You must define AZLH_PREFIX"
-        return
-    fi
-
-    local NAME="${RESOURCE_NAME:-$(resource_name)}"
-
-    az_group_create "$NAME" > /dev/null
-
-    NOTES="$1"
-    if [[ -n "$NOTES" ]]; then
-        az_group_notes_add "$NAME" "$NOTES"
-    fi
-
-    az aks create \
-        --resource-group "$NAME" \
-        --name "$NAME" \
-        --node-count 1
-
-    az aks get-credentials \
-        --resource-group "$NAME" \
-        --name "$NAME" \
-        --overwrite-existing
+    az_aks_create 1 "$1"
 }
 
 az_aks_create_medium () {
+    az_aks_create 5, "$1"
+}
+
+az_aks_create () {
     if [[ -z "$AZLH_PREFIX" ]]; then
         echo "You must define AZLH_PREFIX"
+        return
+    fi
+
+    local NODE_COUNT
+    NODE_COUNT="$1"
+    if [[ -z "$NODE_COUNT" ]]; then
+        print_usage "Node count"
+        echo "Optionally set ENABLE_OSM to deploy OSM to the cluster"
         return
     fi
 
@@ -39,15 +29,23 @@ az_aks_create_medium () {
 
     az_group_create "$NAME" > /dev/null
 
-    NOTES="$1"
+    NOTES="$2"
     if [[ -n "$NOTES" ]]; then
         az_group_notes_add "$NAME" "$NOTES"
     fi
 
-    az aks create \
-        --resource-group "$NAME" \
-        --name "$NAME" \
-        --node-count 5
+    IFS='' read -r -d '' CMD << EOF
+        az aks create \
+            --resource-group "$NAME" \
+            --name "$NAME" \
+            --node-count "$NODE_COUNT"
+EOF
+
+    if [[ -n "$ENABLE_OSM" ]]; then
+        CMD="$(echo "$CMD" | tr -d '\n') --enable-addons open-service-mesh"
+    fi
+
+    bash -c "$CMD"
 
     az aks get-credentials \
         --resource-group "$NAME" \
