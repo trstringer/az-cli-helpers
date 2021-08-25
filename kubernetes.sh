@@ -552,14 +552,19 @@ az_arc_osm_install () {
     if [[ -z "$RELEASE_TRAIN" ]]; then
         print_usage \
             "Release train" \
-            "(Optional) Version (defaults to latest)" \
+            "(Optional) Version (defaults to latest)"
 
         echo "Optionally set AZLH_AUTO_UPGRADE (true or false)"
+        echo "Optionally set AZLH_ARC_RESOURCE to the Arc Kubernetes"
+        echo "    to the resource group and cluster name (common for kind clusters)"
         return
     fi
 
     local CURRENT_CLUSTER
     CURRENT_CLUSTER=$(kubectl config current-context)
+    if [[ -n "$AZLH_ARC_RESOURCE" ]]; then
+        CURRENT_CLUSTER="$AZLH_ARC_RESOURCE"
+    fi
     IFS='' read -r -d '' CMD << EOF
         az k8s-extension create \
             --resource-group "$CURRENT_CLUSTER" \
