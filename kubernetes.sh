@@ -8,7 +8,7 @@ az_aks_create_minimal () {
 }
 
 az_aks_create_medium () {
-    az_aks_create 5, "$1"
+    az_aks_create 5 "$1"
 }
 
 az_aks_create () {
