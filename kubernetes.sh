@@ -586,3 +586,37 @@ EOF
 
     bash -c "$CMD"
 }
+
+az_arc_cluster_connect () {
+    if [[ -z "$AZLH_PREFIX" ]]; then
+        echo "You must define AZLH_PREFIX"
+        return
+    fi
+
+    local NAME="${RESOURCE_NAME:-$(resource_name)}"
+    az_group_create "$NAME" > /dev/null
+
+    while true; do
+        echo "$(date) - Waiting for cluster to come up"
+        if kubectl get no; then
+            break
+        fi
+        sleep 5
+    done
+
+    while true; do
+        echo "$(date) - Attempting to connect Kubernetes cluster to Arc"
+        if az connectedk8s connect \
+                --resource-group "$NAME" \
+                --name "$NAME"; then
+            break
+        fi
+
+        # If the helm install failed, then remove it and try again.
+        az connectedk8s delete \
+            --resource-group "$NAME" \
+            --name "$NAME" \
+            --yes
+        sleep 5
+    done
+}
