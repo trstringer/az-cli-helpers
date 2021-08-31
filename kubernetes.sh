@@ -457,10 +457,10 @@ az_osm_cluster_smi_traffic_policy_mode_disable () {
 
 az_osm_arc_cluster_install () {
     local CURRENT_CLUSTER
-    CURRENT_CLUSTER=$(kubectl config current-context)
+    CURRENT_CLUSTER=${ARC_CLUSTER:-$(kubectl config current-context)}
 
     local OSM_VERSION
-    OSM_VERSION="0.9.1"
+    OSM_VERSION="0.9.2"
 
     echo '{"osm.OpenServiceMesh.deployPrometheus": "true"}' > /tmp/osm-arc-config.json
 
