@@ -619,4 +619,11 @@ az_arc_cluster_connect () {
             --yes
         sleep 5
     done
+
+    # Rename the kind context to the resource group name.
+    if kubectl config current-context | grep kind; then
+        kubectl config rename-context \
+            "$(kubectl config current-context)" \
+            "$NAME"
+    fi
 }
